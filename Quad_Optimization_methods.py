@@ -2,9 +2,9 @@ import math
 import numpy as np
 from sympy import*
 def function(t):
-    #F=t/math.log10(t)
+    F=t/math.log10(t)
     #F = 0.65 - (0.75/(1 + pow(t,2))) - 0.65*t*(math.atan(pow(t,-1)))
-    F = pow(t,5) - 5*pow(t,3) - 20*t + 5
+    #F = pow(t,5) - 5*pow(t,3) - 20*t + 5
     return F
 
 def simplex(x1,x2,x3,alpha,beta,gamma,epsilon):
@@ -165,12 +165,11 @@ def cubic_interpolation(f,df,acc,x1,x2):
         b4 = df(x2)
         B = np.array([[b1], [b2], [b3], [b4]])
         A = np.array([[1, x1, pow(x1, 2), pow(x1, 3)],[ 0, 1, 2*x1, 3*pow(x1, 2)], [1, x2, pow(x2, 2), pow(x2, 3)] , [0, 1, 2*x2, 3*pow(x2, 2)]])
-        X = np.linalg.solve(A, B)
         Z=(3*(b1-b3))/(x2-x1) + b2+b4
         a1 = (1/pow((x1-x2),2))*(pow(x2,2)*b2 + pow(x1,2)*b4 + 2*Z*x1*x2)#X[1,0]
         a2 = -(1/(pow((x1-x2),2)))*((x1+x2)*Z + x2*b2 + x1*b4)#X[2,0]
         a3 = (1/(3*pow((x1-x2),2)))*(2*Z + b2 + b4)#X[3,0]
-
+        keera=(pow(a2, 2) - 3 * a1 * a3,2)
         x_star = (-a2 + pow((pow(a2,2)-3*a1*a3),0.5))/(3*a3)#float(x1 + ((-1*a1)/(a2 + sqrt((keera)))))
         check = abs(df(x_star))
         if check < acc:
@@ -186,27 +185,31 @@ def cubic_interpolation(f,df,acc,x1,x2):
 def quad_interpolation(x1,t_not,acc):
     fa = function(x1)
     temp = function(x1)
-    f1 = function(t_not)
+    f1 = function(x1+t_not)
     while f1<temp:
         fb = f1
         x2 = t_not
         t_not = 2*t_not
-        f1 = function(t_not)
+        f1 = function(x1+t_not)
     fc = f1
-    x3 = t_not
-    lamda_star = (4*fb - 3*fa - fc)/(4*fb - 2*fc - 2*fa)
+    x3 = x1+t_not
     a0 = (function(x1)*x2*x3*(x3-x2) + function(x2)*x3*x1*(x1-x3) + function(x3)*x1*x2*(x2-x1))/((x1-x2)*(x2-x3)*(x3-x1))
     a1 = (function(x1)*(pow(x1,2)-pow(x3,2)) + function(x2)*(pow(x3,2)-pow(x1,2)) + function(x3)*(pow(x1,2)-pow(x2,2)))/((x1-x2)*(x2-x3)*(x3-x1))
     a2 = -1*(function(x1) * (x2 - x3) + function(x2)*(x3 - x1) + function(x3)*(x1- x2)) / ((x1 - x2) * (x2 - x3) * (x3 - x1))
     x_star = -1*(a1/(2*a2))#-1*(a1/(2*a2))
     error = acc
     x_prev = 9999
+    prev_error = 9999
     while error >= acc:
         a0 = (function(x1) * x2 * x3 * (x3 - x2) + function(x2) * x3 * x1 * (x1 - x3) + function(x3) * x1 * x2 * (x2 - x1)) / ((x1 - x2) * (x2 - x3) * (x3 - x1))
         a1 = (function(x1) * (pow(x1, 2) - pow(x3, 2)) + function(x2) * (pow(x3, 2) - pow(x1, 2)) + function(x3) * (pow(x1, 2) - pow(x2, 2))) / ((x1 - x2) * (x2 - x3) * (x3 - x1))
         a2 = -1 * (function(x1) * (x2 - x3) + function(x2) * (x3 - x1) + function(x3) * (x1 - x2)) / ((x1 - x2) * (x2 - x3) * (x3 - x1))
         x_star = -1*(a1/(2*a2))#(function(x1)*(pow(x2,2) - pow(x3,2)) + function(x2)*(pow(x3,2) - pow(x1,2)) + function(x3)*(pow(x1,2) - pow(x2,2)))/(2*(function(x1)*(x2 - x3) + function(x2)*(x3 - x1) + function(x3)*(x1 - x2)))
         error = abs((x_star - x_prev)/x_prev)
+        if error > prev_error:
+            x_star = x_prev
+            break
+        prev_error = error
         x_prev = x_star
         if x_star < x2 and function(x_star) < function(x2):
             x1 = x1
@@ -360,7 +363,7 @@ def golden_section(a,b,epsilon,max_min):
     return a,b
 
 x = symbols('x')
-f = pow(x,5) - 5*pow(x,3) - 20*x +5#0.65 - (0.75/(1 + pow(x,2))) - 0.65*x*(atan(pow(x,-1)))#  x/log(x)
+f =x/log(x) #0.65 - (0.75/(1 + pow(x,2))) - 0.65*x*(atan(pow(x,-1)))#pow(x,5) - 5*pow(x,3) - 20*x +5#
 df = diff(f)
 d2f = diff(df)
 print(df)
@@ -381,36 +384,36 @@ print("fibonacci Interval: ",a,b)
 a,b = dichotomous_search(0.2,3,0.005,0.001,0)#(a,b,accuracy,delta,min or max)
 print("dichotomous Interval: ",a,b)
 
-a,b = interval_halving(0.2,3,0.005,0)#(a,b,accuracy,min or max)
+a,b = interval_halving(2,6,0.001,0)#(a,b,accuracy,min or max)
 print("Interval halving Interval: ",a,b)
 
-a= quad_interpolation(0.1,0.5,0.01)#x1,x2,x3,acc
+a= quad_interpolation(2,0.1,0.01)#x1,x2,x3,acc
 print("Quad interpolation Approx sol: ",a)
 
-x_star = cubic_interpolation(f,df,0.1,0,3.2)#f,df,acc,x1,x2
+x_star = cubic_interpolation(f,df,0.01,0.1,3.2)#f,df,acc,x1,x2
 print("Cubic interpolation Approx sol: ",x_star)
 
-x_star = Quasi_Newton(0.1,0.01,0.1)#x1,del_x,epsilon
+x_star = Quasi_Newton(2,0.01,0.1)#x1,del_x,epsilon
 print("Quasi Newton Approx sol: ",x_star)
 
 x_star = seacant_method(df,0.01,0,0.1)#df,epsilon,A,t0
 print("seacant Approx sol: ",x_star)
 
-x_star = Newton_method(df,d2f,0.2,0.01)#df,d2f,lamda,epsilon
+x_star = Newton_method(df,d2f,2,0.01)#df,d2f,lamda,epsilon
 print("Newton method Approx sol: ",x_star)
 
-x_star = unrestricted_fixed(0.2,0.1)#lamda,step
+x_star = unrestricted_fixed(2,0.1)#lamda,step
 print("unrestricted fixed step Approx sol: ",x_star)
 
 x_star = exhaustive_search(20,0.1)#n,step
 print("exhaustive search Approx sol: ",x_star)
 
-x_star = unrestricted_accel(0.2,0.01)#lamda,step
+x_star = unrestricted_accel(2,0.01)#lamda,step
 print("unrestricted accel Approx sol: ",x_star)
 
-'''
+
 x1 = np.array([-2, -2])
 x2 = np.array([-3, 0])
 x3 = np.array([-1, -1])
 opt_sol,daviation = simplex(x1,x2,x3,1,0.5,2,0.2)#x1,x2,x3,alpha,beta,gamma,epsilon
-print("simplex centroid and daviation:",opt_sol,daviation)'''
+print("simplex centroid and daviation:",opt_sol,daviation)
